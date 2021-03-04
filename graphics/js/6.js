@@ -2,48 +2,25 @@
 let camera, scene, renderer;
 let cameraControls;
 let clock = new THREE.Clock();
-let root = null, box;
+let root = null, sphereRadius;
 
 function createScene() {
-    box = (5, 10 ,1);
+    sphereRadius = 15;
     let starburstFnc = makeStarburstFnc(100, 1);
-    root = createCube(starburstFnc, 400, box);
+    root = createSphereF(starburstFnc, 400, sphereRadius);
     scene.add(root);
 }
 
-function createCube(fnc, n, x, y, z, rad){
+function createSphereF(fnc, n, rad) {
     let root = new THREE.Object3D();
-    let coords = [-1.0, 1.0];
-    for (let x = 0; x < 2; x++)
-        for (let y = 0; y < 2; y++)
-            for (let z = 0; z < 2; z++)
-                root.vertices.push(new THREE.Vector3(coords[x], coords[y], coords[z]));
-    let faces = [[0, 6, 4],  // back
-                 [6, 0, 2],
-                 [1, 7, 3],  // front
-                 [7, 1, 5],
-                 [5, 6, 7],  // right
-                 [6, 5, 4],
-                 [1, 2, 0],  // left
-                 [2, 1, 3],
-                 [2, 7, 6],  // top
-                 [7, 2, 3],
-                 [5, 0, 4],   // bottom
-                 [0, 5, 1]
-             ];
-    for (let i = 0; i < 12; i++)
-        geom.faces.push(new THREE.Face3(faces[i][0], faces[i][1], faces[i][2]));
-    for (let i = 0; i < 6; i++)
-        for (let j = 0; j < 2; j++)
-            root.faces[2*i+j].materialIndex = i;
-    let mesh = new THREE.Mesh(root);
     for (let i = 0; i < n; i++) {
         let obj = fnc(i, n);
-        let p = getRandomPointOnBox(-1 * 20/2 * Math.random());
-        obj.position = (x.p, y.p);
+        let p = getRandomPointOnSphere(rad);
+//        obj.position.set(p.x, p.y, p.z);
+        obj.position = p;
         root.add(obj);
-}
-    return mesh, root;
+    }
+    return root;
 }
 
 function makeStarburstFnc(maxRays, maxRad) {
@@ -54,21 +31,26 @@ function makeStarburstFnc(maxRays, maxRad) {
 }
 
 function starburst(maxRays, maxRad) {
-    let rad = 1;   
+    let rad = 1;   // had been rad = 10?????
     let origin = new THREE.Vector3(0, 0, 0);
     let innerColor = getRandomColor(0.8, 0.1, 0.8);
     let black = new THREE.Color(0x000000);
-    let geom = new THREE.BoxGeometry();
-    let nbrRays = getRandomInt(-1, 1);
+    let geom = new THREE.Geometry();
+    let nbrRays = getRandomInt(1, maxRays);
     for (let i = 0; i < nbrRays; i++) {
         let r = rad * getRandomFloat(0.1, maxRad);
-        let dest = getRandomPointOnBox(r);
+        let dest = getRandomPointOnSphere(r);
         geom.vertices.push(origin, dest);
         geom.colors.push(innerColor, black);
     }
     let args = {vertexColors: true, linewidth: 2};
     let mat = new THREE.LineBasicMaterial(args);
     return new THREE.Line(geom, mat, THREE.LineSegments);
+}
+
+function animate() {
+    window.requestAnimationFrame(animate);
+    render();
 }
 
 let controls = new function() {
@@ -86,6 +68,8 @@ function initGui() {
     gui.add(controls, 'Go');
 }
 
+
+
 function update() {
     let nbrBursts = controls.nbrBursts;
     let burstRadius = controls.burstRadius;
@@ -93,9 +77,10 @@ function update() {
     if (root)
         scene.remove(root);
     let starburstFnc = makeStarburstFnc(maxRays, burstRadius);
-    root = createCube(starburstFnc, nbrBursts, box);
+    root = createSphereF(starburstFnc, nbrBursts, sphereRadius);
     scene.add(root);
 }
+
 
 
 function render() {
@@ -104,10 +89,6 @@ function render() {
     renderer.render(scene, camera);
 }
 
-function animate() {
-    window.requestAnimationFrame(animate);
-    render();
-}
 
 function init() {
     let canvasWidth = window.innerWidth;
@@ -123,7 +104,7 @@ function init() {
     renderer.setClearColor(0x000000, 1.0);
 
     camera = new THREE.PerspectiveCamera( 40, canvasRatio, 1, 1000);
-    camera.position.set(0, 0, 40);
+    camera.position.set(0, 0, 5);
     camera.lookAt(new THREE.Vector3(0, 0, 0));
     cameraControls = new THREE.OrbitControls(camera, renderer.domElement);
 
